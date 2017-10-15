@@ -1,0 +1,64 @@
+<html>
+    <head>
+            <script
+            src="https://code.jquery.com/jquery-3.2.1.min.js"
+            integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+            crossorigin="anonymous"></script>
+    </head>
+<body>
+
+<form>
+<input type="submit" id="button" value="Connect" onclick="connect(); return false;" />
+</form>
+<form>
+<input type="submit" id="button2" value="read sensors" onclick="read_sensors(); return false;" />
+<input type="submit" id="aircon_on" value="Air Conditioner On" onclick="send_ir_command(0); return false;" />
+<input type="submit" id="aircon_off" value="Air Conditioner Off" onclick="send_ir_command(2); return false;" />
+<input type="submit" id="TV on" value="TV On" onclick="send_ir_command(1); return false;" />
+</form>
+
+<p>Temperature: <span id="temp"></span>°C humidity: <span id="humid"></span>%</p>
+
+<script>
+var ws;
+var event_data;
+
+function connect(){
+    // change the address to global IP
+    ws = new WebSocket("ws://192.168.0.6:6578/");
+    ws.binaryType = 'arraybuffer';
+
+    ws.onmessage = function(event) {
+        console.log(event);
+        event_data = event;
+        if (event.data instanceof ArrayBuffer) {
+            var data = new Uint8Array(event.data);
+            if(data[0] == 100){
+                var temp, humid;
+                temp = (data[2] * 256 + data[3]) * 0.1;
+                humid = (data[4] * 256 + data[5]) * 0.1;
+                $("#temp").text(temp.toFixed(1));
+                $("#humid").text(humid.toFixed(1));
+                console.log([temp, humid])
+            }
+            console.log(data);
+        }
+    }
+}
+
+function read_sensors(){
+    var data = new Uint8Array(1);
+    data[0] = 100;
+    ws.send(data);
+}
+
+function send_ir_command(cmd){
+    var data = new Uint8Array(2);
+    data[0] = 200;
+    data[1] = cmd;
+    ws.send(data);
+}
+
+</script>
+</body>
+</html>
